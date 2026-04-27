@@ -252,7 +252,7 @@ func VulnScan(ctx context.Context, cfg *config.Config, exec *runner.Executor) {
 
 				if err == nil && len(output) > 0 {
 					outStr := string(output)
-					if strings.Contains(outStr, "is vulnerable") || strings.Contains(outStr, "injectable") {
+					if strings.Contains(outStr, "is vulnerable") || strings.Contains(outStr, "Parameter:") && strings.Contains(outStr, "Type:") {
 						findings = append(findings, fmt.Sprintf("[VULN] %s", cleanURL))
 						findings = append(findings, outStr)
 					}
