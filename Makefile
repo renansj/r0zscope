@@ -103,10 +103,10 @@ install-pip-tools:
 		echo "  [ok] linkfinder already installed"; \
 	else \
 		echo "  [*] Installing linkfinder (git clone)..."; \
-		rm -rf /opt/LinkFinder; \
-		git clone https://github.com/GerbenJavado/LinkFinder.git /opt/LinkFinder 2>/dev/null && \
-		cd /opt/LinkFinder && pip3 install -r requirements.txt --break-system-packages 2>/dev/null && \
-		chmod +x /opt/LinkFinder/linkfinder.py && \
+		sudo rm -rf /opt/LinkFinder; \
+		sudo git clone https://github.com/GerbenJavado/LinkFinder.git /opt/LinkFinder && \
+		sudo pip3 install -r /opt/LinkFinder/requirements.txt --break-system-packages && \
+		sudo chmod +x /opt/LinkFinder/linkfinder.py && \
 		sudo ln -sf /opt/LinkFinder/linkfinder.py /usr/local/bin/linkfinder || \
 		echo "  [!] Failed to install linkfinder"; \
 	fi
@@ -114,10 +114,10 @@ install-pip-tools:
 		echo "  [ok] secretfinder already installed"; \
 	else \
 		echo "  [*] Installing secretfinder (git clone)..."; \
-		rm -rf /opt/SecretFinder; \
-		git clone https://github.com/m4ll0k/SecretFinder.git /opt/SecretFinder 2>/dev/null && \
-		cd /opt/SecretFinder && pip3 install -r requirements.txt --break-system-packages 2>/dev/null && \
-		chmod +x /opt/SecretFinder/SecretFinder.py && \
+		sudo rm -rf /opt/SecretFinder; \
+		sudo git clone https://github.com/m4ll0k/SecretFinder.git /opt/SecretFinder && \
+		sudo pip3 install -r /opt/SecretFinder/requirements.txt --break-system-packages && \
+		sudo chmod +x /opt/SecretFinder/SecretFinder.py && \
 		sudo ln -sf /opt/SecretFinder/SecretFinder.py /usr/local/bin/SecretFinder || \
 		echo "  [!] Failed to install secretfinder"; \
 	fi
@@ -125,10 +125,10 @@ install-pip-tools:
 		echo "  [ok] corsy already installed"; \
 	else \
 		echo "  [*] Installing corsy (git clone)..."; \
-		rm -rf /opt/Corsy; \
-		git clone https://github.com/s0md3v/Corsy.git /opt/Corsy 2>/dev/null && \
-		cd /opt/Corsy && pip3 install -r requirements.txt --break-system-packages 2>/dev/null && \
-		chmod +x /opt/Corsy/corsy.py && \
+		sudo rm -rf /opt/Corsy; \
+		sudo git clone https://github.com/s0md3v/Corsy.git /opt/Corsy && \
+		sudo pip3 install -r /opt/Corsy/requirements.txt --break-system-packages && \
+		sudo chmod +x /opt/Corsy/corsy.py && \
 		sudo ln -sf /opt/Corsy/corsy.py /usr/local/bin/corsy || \
 		echo "  [!] Failed to install corsy"; \
 	fi
