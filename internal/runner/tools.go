@@ -52,7 +52,7 @@ func AllTools() []ToolInfo {
 		{
 			Name:        "findomain",
 			Binary:      "findomain",
-			InstallCmd:  "apt install -y findomain || cargo install findomain",
+			InstallCmd:  "apt install -y findomain",
 			Description: "Fast subdomain enumeration (Rust)",
 			Required:    false,
 			Category:    "subdomain",
@@ -169,14 +169,6 @@ func AllTools() []ToolInfo {
 			Category:    "fingerprint",
 		},
 		{
-			Name:        "wappalyzer",
-			Binary:      "wappalyzer",
-			InstallCmd:  "npm install -g wappalyzer",
-			Description: "Web technology detection",
-			Required:    false,
-			Category:    "fingerprint",
-		},
-		{
 			Name:        "katana",
 			Binary:      "katana",
 			InstallCmd:  "go install -v github.com/projectdiscovery/katana/cmd/katana@latest",
@@ -273,14 +265,6 @@ func AllTools() []ToolInfo {
 			Category:    "param",
 		},
 		{
-			Name:        "x8",
-			Binary:      "x8",
-			InstallCmd:  "cargo install x8 || pip3 install x8",
-			Description: "Hidden parameter discovery (Rust, fast)",
-			Required:    false,
-			Category:    "param",
-		},
-		{
 			Name:        "ffuf",
 			Binary:      "ffuf",
 			InstallCmd:  "go install -v github.com/ffuf/ffuf/v2@latest",
@@ -317,7 +301,7 @@ func AllTools() []ToolInfo {
 		{
 			Name:        "linkfinder",
 			Binary:      "linkfinder",
-			InstallCmd:  "pip3 install linkfinder",
+			InstallCmd:  "pipx install linkfinder",
 			Description: "Endpoint extraction from JavaScript files",
 			Required:    false,
 			Category:    "js",
@@ -325,7 +309,7 @@ func AllTools() []ToolInfo {
 		{
 			Name:        "secretfinder",
 			Binary:      "SecretFinder",
-			InstallCmd:  "pip3 install secretfinder || git clone https://github.com/m4ll0k/SecretFinder.git",
+			InstallCmd:  "pipx install git+https://github.com/m4ll0k/SecretFinder.git",
 			Description: "Secret/API key extraction from JavaScript",
 			Required:    false,
 			Category:    "js",
@@ -436,15 +420,15 @@ func AllTools() []ToolInfo {
 		{
 			Name:        "corsy",
 			Binary:      "corsy",
-			InstallCmd:  "pip3 install corsy || git clone https://github.com/s0md3v/Corsy.git",
+			InstallCmd:  "pipx install corsy",
 			Description: "CORS misconfiguration scanner",
 			Required:    false,
 			Category:    "vuln",
 		},
 		{
 			Name:        "testssl",
-			Binary:      "testssl",
-			InstallCmd:  "apt install -y testssl.sh || git clone https://github.com/drwetter/testssl.sh.git",
+			Binary:      "testssl.sh",
+			InstallCmd:  "apt install -y testssl.sh",
 			Description: "Full TLS/SSL analysis (ciphers, protocols, vulns)",
 			Required:    false,
 			Category:    "ssl",

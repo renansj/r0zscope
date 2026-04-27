@@ -99,6 +99,14 @@ install-pip-tools:
 	$(call pipx_install,sslyze,sslyze)
 	$(call pipx_install,dirsearch,dirsearch)
 	$(call pipx_install,trufflehog,trufflehog)
+	$(call pipx_install,linkfinder,linkfinder)
+	$(call pipx_install,corsy,corsy)
+	@if command -v SecretFinder >/dev/null 2>&1 || command -v secretfinder >/dev/null 2>&1; then \
+		echo "  [ok] secretfinder already installed"; \
+	else \
+		echo "  [*] Installing secretfinder..."; \
+		pipx install git+https://github.com/m4ll0k/SecretFinder.git || echo "  [!] Failed to install secretfinder"; \
+	fi
 	@echo "[+] Python tools done."
 
 install-apt-tools:
@@ -112,6 +120,8 @@ install-apt-tools:
 	$(call apt_install,massdns,massdns)
 	$(call apt_install,dnsrecon,dnsrecon)
 	$(call apt_install,feroxbuster,feroxbuster)
+	$(call apt_install,testssl.sh,testssl.sh)
+	$(call apt_install,findomain,findomain)
 	@echo "[+] Apt tools done."
 
 install-all-tools: install-go-tools install-pip-tools install-apt-tools
