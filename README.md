@@ -98,12 +98,12 @@ What changes in CTF mode:
 | 4 | Port scanning | naabu, nmap |
 | 5 | URL discovery | waybackurls, gau, katana, gospider, hakrawler, paramspider, unfurl, gf, uro |
 | 5.5 | Content discovery | ffuf, feroxbuster, gobuster, dirsearch, arjun |
-| 6 | JS analysis (local files) | linkfinder, SecretFinder, trufflehog, subjs |
+| 6 | JS analysis (local files) | linkfinder, SecretFinder, trufflehog, semgrep, subjs |
 | 7 | Subdomain takeover | subzy, subjack |
 | 8 | Vulnerability scanning | nuclei, nikto, dalfox, sqlmap, crlfuzz, corsy, wpscan, commix |
 | 9 | SSL/TLS analysis | sslyze, testssl.sh |
 
-JS analysis runs on **locally downloaded files** - katana saves responses to disk with `-store-response`, then linkfinder, SecretFinder, and trufflehog analyze the files directly instead of making redundant HTTP requests.
+JS analysis runs on **locally downloaded files** - katana saves responses to disk with `-store-response`, then linkfinder, SecretFinder, trufflehog, and semgrep analyze the files directly instead of making redundant HTTP requests. If katana doesn't capture enough JS files, r0zscope downloads them from discovered URLs as a fallback.
 
 ---
 
@@ -166,6 +166,9 @@ recon-output/example.com/
 │   └── secrets.txt            ← extracted from local JS
 ├── trufflehog/
 │   └── secrets.txt            ← filesystem scan on JS dir
+├── semgrep/
+│   ├── findings.txt           ← static analysis results
+│   └── findings.json
 ├── nuclei/
 │   ├── findings.txt
 │   └── fuzz-findings.txt

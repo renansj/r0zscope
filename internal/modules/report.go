@@ -99,6 +99,8 @@ func GenerateReport(cfg *config.Config, exec *runner.Executor, totalStart time.T
 		{filepath.Join(cfg.OutputDir, "subjack", "takeover.txt"), "Subjack - subdomain takeover"},
 		{filepath.Join(cfg.OutputDir, "subzy", "takeover.txt"), "Subzy - subdomain takeover"},
 		{filepath.Join(cfg.OutputDir, "secretfinder", "secrets.txt"), "SecretFinder - JS secrets"},
+		{filepath.Join(cfg.OutputDir, "trufflehog", "secrets.txt"), "Trufflehog - credentials"},
+		{filepath.Join(cfg.OutputDir, "semgrep", "findings.txt"), "Semgrep - JS static analysis"},
 	}
 
 	hasVulns := false

@@ -1,6 +1,7 @@
 ﻿package modules
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
@@ -14,7 +15,6 @@ import (
 	"github.com/renansj/r0zscope/internal/runner"
 )
 
-// JSAnalysis analyzes JavaScript files downloaded locally by katana.
 func JSAnalysis(ctx context.Context, cfg *config.Config, exec *runner.Executor) {
 	cyan := color.New(color.FgCyan, color.Bold)
 	green := color.New(color.FgGreen)
@@ -27,20 +27,23 @@ func JSAnalysis(ctx context.Context, cfg *config.Config, exec *runner.Executor) 
 	start := time.Now()
 	jsURLsFile := exec.OutputPath("_merged", "js-files.txt")
 	aliveFile := exec.OutputPath("_merged", "all-alive.txt")
-	katanaJSDir := exec.OutputPath("katana", "js-responses")
+	katanaStoreDir := exec.OutputPath("katana", "js-responses")
+	jsDownloadDir := exec.OutputPath("_jsdownload", "files")
 
 	hasLinkfinder := isToolAvailable("linkfinder")
 	hasSecretfinder := isToolAvailable("SecretFinder")
 	hasTrufflehog := isToolAvailable("trufflehog")
+	hasSemgrep := isToolAvailable("semgrep")
 	hasSubjs := isToolAvailable("subjs")
 
-	if !hasLinkfinder && !hasSecretfinder && !hasTrufflehog && !hasSubjs {
+	if !hasLinkfinder && !hasSecretfinder && !hasTrufflehog && !hasSemgrep && !hasSubjs {
 		yellow.Println("  [~] No JS analysis tools available.")
 		return
 	}
 
 	var wg sync.WaitGroup
 
+	// Collect more JS URLs via subjs
 	if hasSubjs && runner.FileExists(aliveFile) {
 		wg.Add(1)
 		go func() {
@@ -64,15 +67,22 @@ func JSAnalysis(ctx context.Context, cfg *config.Config, exec *runner.Executor) 
 		wg.Wait()
 	}
 
-	localJSFiles := collectLocalJSFiles(katanaJSDir)
-	fmt.Printf("  [*] %d JS files downloaded locally by katana\n", len(localJSFiles))
+	// Step 1: Collect JS from katana store-response (parse index file)
+	localJSFiles := collectKatanaJSFiles(katanaStoreDir)
+	if len(localJSFiles) > 0 {
+		fmt.Printf("  [*] %d JS files found in katana store-response\n", len(localJSFiles))
+	}
 
-	if len(localJSFiles) == 0 && runner.FileExists(jsURLsFile) {
-		fmt.Println("  [*] No local JS found. Downloading via URLs...")
-		downloadDir := exec.OutputPath("_jsdownload", "files")
-		exec.EnsureDir(downloadDir)
-		localJSFiles = downloadJSFiles(ctx, exec, jsURLsFile, downloadDir)
-		fmt.Printf("  [*] %d JS files downloaded\n", len(localJSFiles))
+	// Step 2: If katana didn't store enough, download JS from discovered URLs
+	if len(localJSFiles) < 5 && runner.FileExists(jsURLsFile) {
+		jsURLs := readLines(jsURLsFile)
+		if len(jsURLs) > 0 {
+			fmt.Printf("  [*] Downloading %d JS files from discovered URLs...\n", len(jsURLs))
+			exec.EnsureDir(jsDownloadDir)
+			downloaded := downloadJSFiles(ctx, exec, jsURLsFile, jsDownloadDir)
+			localJSFiles = append(localJSFiles, downloaded...)
+			fmt.Printf("  [*] %d JS files downloaded\n", len(downloaded))
+		}
 	}
 
 	if len(localJSFiles) == 0 {
@@ -85,6 +95,12 @@ func JSAnalysis(ctx context.Context, cfg *config.Config, exec *runner.Executor) 
 		limit = len(localJSFiles)
 	}
 	jsToAnalyze := localJSFiles[:limit]
+
+	// Figure out which directory has the JS files for directory-level scanners
+	jsScanDir := jsDownloadDir
+	if _, err := os.Stat(jsScanDir); os.IsNotExist(err) {
+		jsScanDir = katanaStoreDir
+	}
 
 	fmt.Printf("  [*] %d JavaScript files to analyze\n", len(jsToAnalyze))
 
@@ -164,33 +180,17 @@ func JSAnalysis(ctx context.Context, cfg *config.Config, exec *runner.Executor) 
 		}()
 	}
 
-	if hasTrufflehog {
+	if hasTrufflehog && jsScanDir != "" {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			modStart := time.Now()
-
-			scanDir := katanaJSDir
-			downloadDir := exec.OutputPath("_jsdownload", "files")
-			if _, err := os.Stat(downloadDir); err == nil {
-				scanDir = downloadDir
-			}
-
-			if scanDir == "" {
-				return
-			}
-
-			fmt.Printf("  [*] trufflehog - scanning JS directory: %s\n", scanDir)
+			fmt.Printf("  [*] trufflehog - scanning JS directory: %s\n", jsScanDir)
 
 			outFile := exec.OutputPath("trufflehog", "secrets.txt")
-			args := []string{
-				"filesystem",
-				scanDir,
-				"--no-update",
-				"--json",
-			}
-
-			output, err := exec.RunCommand(ctx, "trufflehog", args, nil)
+			output, err := exec.RunCommand(ctx, "trufflehog", []string{
+				"filesystem", jsScanDir, "--no-update", "--json",
+			}, nil)
 
 			if err == nil && len(output) > 0 {
 				writeLines(outFile, []string{string(output)})
@@ -206,52 +206,129 @@ func JSAnalysis(ctx context.Context, cfg *config.Config, exec *runner.Executor) 
 		}()
 	}
 
+	if hasSemgrep && jsScanDir != "" {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			modStart := time.Now()
+			fmt.Printf("  [*] semgrep - scanning JS directory for vulnerabilities...\n")
+
+			outFile := exec.OutputPath("semgrep", "findings.txt")
+			outJSON := exec.OutputPath("semgrep", "findings.json")
+
+			args := []string{
+				"scan",
+				"--config", "auto",
+				"--lang", "js",
+				"--json",
+				"--output", outJSON,
+				"--quiet",
+				jsScanDir,
+			}
+
+			exec.RunCommand(ctx, "semgrep", args, nil)
+
+			// Also run with text output for readability
+			textArgs := []string{
+				"scan",
+				"--config", "auto",
+				"--lang", "js",
+				"--output", outFile,
+				"--quiet",
+				jsScanDir,
+			}
+			exec.RunCommand(ctx, "semgrep", textArgs, nil)
+
+			lines := runner.CountLines(outFile)
+			if lines > 0 {
+				red.Printf("  [!!!] semgrep: %d findings in JS files! (%v)\n", lines, time.Since(modStart).Round(time.Second))
+			} else {
+				green.Printf("  [✓] semgrep: no findings (%v)\n", time.Since(modStart).Round(time.Second))
+			}
+			exec.AddResult(runner.ModuleResult{Module: "semgrep", Success: true, OutputDir: outFile, Lines: lines, Duration: time.Since(modStart)})
+		}()
+	}
+
 	wg.Wait()
 	cyan.Printf("  [TOTAL] JS analysis completed (%v)\n", time.Since(start).Round(time.Second))
 }
 
-func collectLocalJSFiles(baseDir string) []string {
+// collectKatanaJSFiles parses katana's store-response directory structure.
+// Katana stores responses as: <store-dir>/<domain>/<hash>.txt with an index.txt mapping URLs to files.
+// We find JS responses by checking the index for .js URLs, or by scanning response bodies.
+func collectKatanaJSFiles(storeDir string) []string {
 	var jsFiles []string
 
-	if _, err := os.Stat(baseDir); os.IsNotExist(err) {
+	if _, err := os.Stat(storeDir); os.IsNotExist(err) {
 		return jsFiles
 	}
 
-	filepath.Walk(baseDir, func(path string, info os.FileInfo, err error) error {
+	seen := make(map[string]struct{})
+
+	// Walk all subdirectories looking for index.txt files
+	filepath.Walk(storeDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil || info.IsDir() {
 			return nil
 		}
 
-		lower := strings.ToLower(info.Name())
-
-		if strings.HasSuffix(lower, ".js") || strings.HasSuffix(lower, ".mjs") {
-			jsFiles = append(jsFiles, path)
-			return nil
-		}
-
-		if info.Size() > 0 && info.Size() < 10*1024*1024 {
+		// Katana index file maps URLs to response files
+		if info.Name() == "index.txt" {
 			f, ferr := os.Open(path)
 			if ferr != nil {
 				return nil
 			}
 			defer f.Close()
 
-			buf := make([]byte, 512)
-			n, _ := f.Read(buf)
-			if n > 0 {
-				content := string(buf[:n])
-				trimmed := strings.TrimSpace(content)
-				if strings.HasPrefix(trimmed, "function") ||
-					strings.HasPrefix(trimmed, "var ") ||
-					strings.HasPrefix(trimmed, "let ") ||
-					strings.HasPrefix(trimmed, "const ") ||
-					strings.HasPrefix(trimmed, "(function") ||
-					strings.HasPrefix(trimmed, "!function") ||
-					strings.HasPrefix(trimmed, "\"use strict\"") ||
-					strings.HasPrefix(trimmed, "'use strict'") ||
-					strings.Contains(content, "document.") ||
-					strings.Contains(content, "window.") ||
-					strings.Contains(content, "module.exports") {
+			dir := filepath.Dir(path)
+			scanner := bufio.NewScanner(f)
+			for scanner.Scan() {
+				line := scanner.Text()
+				// Format: <url> <response-file>
+				parts := strings.SplitN(line, " ", 2)
+				if len(parts) != 2 {
+					continue
+				}
+				url := strings.ToLower(parts[0])
+				respFile := parts[1]
+
+				// Check if URL is a JS file
+				cleanURL := url
+				if idx := strings.Index(cleanURL, "?"); idx != -1 {
+					cleanURL = cleanURL[:idx]
+				}
+
+				isJS := strings.HasSuffix(cleanURL, ".js") ||
+					strings.HasSuffix(cleanURL, ".mjs") ||
+					strings.HasSuffix(cleanURL, ".jsx")
+
+				if isJS {
+					fullPath := filepath.Join(dir, respFile)
+					if _, exists := seen[fullPath]; !exists {
+						if _, serr := os.Stat(fullPath); serr == nil {
+							seen[fullPath] = struct{}{}
+							jsFiles = append(jsFiles, fullPath)
+						}
+					}
+				}
+			}
+			return nil
+		}
+
+		// Also check files directly by extension or content
+		lower := strings.ToLower(info.Name())
+		if strings.HasSuffix(lower, ".js") || strings.HasSuffix(lower, ".mjs") {
+			if _, exists := seen[path]; !exists {
+				seen[path] = struct{}{}
+				jsFiles = append(jsFiles, path)
+			}
+			return nil
+		}
+
+		// For files without .js extension, check content (katana uses hashes as filenames)
+		if info.Size() > 10 && info.Size() < 10*1024*1024 && !strings.HasSuffix(lower, ".txt") {
+			if looksLikeJS(path) {
+				if _, exists := seen[path]; !exists {
+					seen[path] = struct{}{}
 					jsFiles = append(jsFiles, path)
 				}
 			}
@@ -263,17 +340,60 @@ func collectLocalJSFiles(baseDir string) []string {
 	return jsFiles
 }
 
+func looksLikeJS(path string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+
+	buf := make([]byte, 512)
+	n, _ := f.Read(buf)
+	if n == 0 {
+		return false
+	}
+
+	content := string(buf[:n])
+	trimmed := strings.TrimSpace(content)
+
+	// Skip HTML responses
+	if strings.HasPrefix(trimmed, "<!") || strings.HasPrefix(trimmed, "<html") || strings.HasPrefix(trimmed, "<HTML") {
+		return false
+	}
+	// Skip HTTP headers
+	if strings.HasPrefix(trimmed, "HTTP/") {
+		return false
+	}
+
+	jsSignals := 0
+	indicators := []string{
+		"function", "var ", "let ", "const ", "(function", "!function",
+		"\"use strict\"", "'use strict'", "module.exports", "export ",
+		"import ", "require(", "addEventListener", "document.", "window.",
+		"prototype", "=>", "async ", "await ", "Promise", "fetch(",
+		"XMLHttpRequest", "$.ajax", "axios",
+	}
+
+	for _, ind := range indicators {
+		if strings.Contains(content, ind) {
+			jsSignals++
+		}
+	}
+
+	return jsSignals >= 2
+}
+
 func downloadJSFiles(ctx context.Context, exec *runner.Executor, urlsFile, outputDir string) []string {
 	urls := readLines(urlsFile)
 	var downloaded []string
 	var mu sync.Mutex
 
-	limit := 50
+	limit := 100
 	if len(urls) < limit {
 		limit = len(urls)
 	}
 
-	sem := make(chan struct{}, 10)
+	sem := make(chan struct{}, 15)
 	var wg sync.WaitGroup
 
 	for _, rawURL := range urls[:limit] {

@@ -341,6 +341,14 @@ func AllTools() []ToolInfo {
 			Category:    "js",
 		},
 		{
+			Name:        "semgrep",
+			Binary:      "semgrep",
+			InstallCmd:  "pipx install semgrep",
+			Description: "Static analysis for JS vulnerabilities (SAST)",
+			Required:    false,
+			Category:    "js",
+		},
+		{
 			Name:        "subjack",
 			Binary:      "subjack",
 			InstallCmd:  "go install -v github.com/haccer/subjack@latest",

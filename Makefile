@@ -99,6 +99,7 @@ install-pip-tools:
 	$(call pipx_install,sslyze,sslyze)
 	$(call pipx_install,dirsearch,dirsearch)
 	$(call pipx_install,trufflehog,trufflehog)
+	$(call pipx_install,semgrep,semgrep)
 	@if command -v linkfinder >/dev/null 2>&1; then \
 		echo "  [ok] linkfinder already installed"; \
 	else \
