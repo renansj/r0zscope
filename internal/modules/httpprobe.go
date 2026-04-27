@@ -77,11 +77,12 @@ func HTTPProbe(ctx context.Context, cfg *config.Config, exec *runner.Executor) {
 		}
 
 		green.Printf("  [✓] httpx: %d alive hosts (%v)\n", lines, time.Since(modStart).Round(time.Second))
-		addOutput(outFile)
-		exec.AddResult(runner.ModuleResult{Module: "httpx", Success: true, OutputDir: outFile, Lines: lines, Duration: time.Since(modStart)})
 
 		cleanFile := exec.OutputPath("httpx", "urls-clean.txt")
 		extractCleanURLs(outFile, cleanFile)
+
+		addOutput(cleanFile)
+		exec.AddResult(runner.ModuleResult{Module: "httpx", Success: true, OutputDir: outFile, Lines: lines, Duration: time.Since(modStart)})
 	}()
 
 	if isToolAvailable("httprobe") {

@@ -67,21 +67,23 @@ func JSAnalysis(ctx context.Context, cfg *config.Config, exec *runner.Executor) 
 		wg.Wait()
 	}
 
-	// Step 1: Collect JS from katana store-response (parse index file)
+	// Step 1: Collect JS from katana store-response
 	localJSFiles := collectKatanaJSFiles(katanaStoreDir)
 	if len(localJSFiles) > 0 {
 		fmt.Printf("  [*] %d JS files found in katana store-response\n", len(localJSFiles))
 	}
 
-	// Step 2: If katana didn't store enough, download JS from discovered URLs
-	if len(localJSFiles) < 5 && runner.FileExists(jsURLsFile) {
+	// Step 2: Always download JS from discovered URLs (most reliable method)
+	if runner.FileExists(jsURLsFile) {
 		jsURLs := readLines(jsURLsFile)
 		if len(jsURLs) > 0 {
 			fmt.Printf("  [*] Downloading %d JS files from discovered URLs...\n", len(jsURLs))
 			exec.EnsureDir(jsDownloadDir)
 			downloaded := downloadJSFiles(ctx, exec, jsURLsFile, jsDownloadDir)
 			localJSFiles = append(localJSFiles, downloaded...)
-			fmt.Printf("  [*] %d JS files downloaded\n", len(downloaded))
+			if len(downloaded) > 0 {
+				green.Printf("  [✓] %d JS files downloaded to %s\n", len(downloaded), jsDownloadDir)
+			}
 		}
 	}
 
@@ -96,10 +98,18 @@ func JSAnalysis(ctx context.Context, cfg *config.Config, exec *runner.Executor) 
 	}
 	jsToAnalyze := localJSFiles[:limit]
 
-	// Figure out which directory has the JS files for directory-level scanners
-	jsScanDir := jsDownloadDir
-	if _, err := os.Stat(jsScanDir); os.IsNotExist(err) {
-		jsScanDir = katanaStoreDir
+	// Prefer download dir for directory-level scanners (trufflehog, semgrep)
+	jsScanDir := ""
+	if info, err := os.Stat(jsDownloadDir); err == nil && info.IsDir() {
+		entries, _ := os.ReadDir(jsDownloadDir)
+		if len(entries) > 0 {
+			jsScanDir = jsDownloadDir
+		}
+	}
+	if jsScanDir == "" {
+		if info, err := os.Stat(katanaStoreDir); err == nil && info.IsDir() {
+			jsScanDir = katanaStoreDir
+		}
 	}
 
 	fmt.Printf("  [*] %d JavaScript files to analyze\n", len(jsToAnalyze))
