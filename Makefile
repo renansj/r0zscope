@@ -5,6 +5,33 @@ LDFLAGS=-ldflags "-s -w -X main.version=$(VERSION)"
 
 .PHONY: all build build-linux clean install check deps
 
+define go_install
+	@if command -v $(1) >/dev/null 2>&1; then \
+		echo "  [ok] $(1) already installed"; \
+	else \
+		echo "  [*] Installing $(1)..."; \
+		go install -v $(2) || echo "  [!] Failed to install $(1)"; \
+	fi
+endef
+
+define pipx_install
+	@if command -v $(1) >/dev/null 2>&1; then \
+		echo "  [ok] $(1) already installed"; \
+	else \
+		echo "  [*] Installing $(1)..."; \
+		pipx install $(2) || echo "  [!] Failed to install $(1)"; \
+	fi
+endef
+
+define apt_install
+	@if command -v $(1) >/dev/null 2>&1; then \
+		echo "  [ok] $(1) already installed"; \
+	else \
+		echo "  [*] Installing $(1)..."; \
+		sudo apt install -y $(2) || echo "  [!] Failed to install $(1)"; \
+	fi
+endef
+
 all: build
 
 build:
@@ -32,58 +59,69 @@ deps:
 	go mod download
 
 install-go-tools:
-	@echo "[*] Installing Go tools..."
-	-go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
-	-go install -v github.com/tomnomnom/assetfinder@latest
-	-go install -v github.com/owasp-amass/amass/v4/...@master
-	-go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest
-	-go install -v github.com/tomnomnom/httprobe@latest
-	-go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest
-	-go install -v github.com/projectdiscovery/katana/cmd/katana@latest
-	-go install -v github.com/tomnomnom/waybackurls@latest
-	-go install -v github.com/lc/gau/v2/cmd/gau@latest
-	-go install -v github.com/tomnomnom/anew@latest
-	-go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest
-	-go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest
-	-go install -v github.com/jaeles-project/gospider@latest
-	-go install -v github.com/tomnomnom/unfurl@latest
-	-go install -v github.com/tomnomnom/qsreplace@latest
-	-go install -v github.com/tomnomnom/gf@latest
-	-go install -v github.com/haccer/subjack@latest
-	-go install -v github.com/PentestPad/subzy@latest
-	-go install -v github.com/hahwul/dalfox/v2@latest
-	-go install -v github.com/dwisiswant0/crlfuzz/cmd/crlfuzz@latest
-	-go install -v github.com/ffuf/ffuf/v2@latest
-	-go install -v github.com/OJ/gobuster/v3@latest
-	-go install -v github.com/hakluke/hakrawler@latest
-	-go install -v github.com/lc/subjs@latest
-	-go install -v github.com/003random/getJS@latest
-	-go install -v github.com/gwen001/github-subdomains@latest
-	-go install -v github.com/d3mondev/puredns/v2@latest
-	-go install -v github.com/projectdiscovery/shuffledns/cmd/shuffledns@latest
-	@echo "[+] Go tools installed."
+	@echo "[*] Checking Go tools..."
+	$(call go_install,subfinder,github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest)
+	$(call go_install,assetfinder,github.com/tomnomnom/assetfinder@latest)
+	$(call go_install,amass,github.com/owasp-amass/amass/v4/...@master)
+	$(call go_install,httpx,github.com/projectdiscovery/httpx/cmd/httpx@latest)
+	$(call go_install,httprobe,github.com/tomnomnom/httprobe@latest)
+	$(call go_install,nuclei,github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest)
+	$(call go_install,katana,github.com/projectdiscovery/katana/cmd/katana@latest)
+	$(call go_install,waybackurls,github.com/tomnomnom/waybackurls@latest)
+	$(call go_install,gau,github.com/lc/gau/v2/cmd/gau@latest)
+	$(call go_install,anew,github.com/tomnomnom/anew@latest)
+	$(call go_install,dnsx,github.com/projectdiscovery/dnsx/cmd/dnsx@latest)
+	$(call go_install,naabu,github.com/projectdiscovery/naabu/v2/cmd/naabu@latest)
+	$(call go_install,gospider,github.com/jaeles-project/gospider@latest)
+	$(call go_install,unfurl,github.com/tomnomnom/unfurl@latest)
+	$(call go_install,qsreplace,github.com/tomnomnom/qsreplace@latest)
+	$(call go_install,gf,github.com/tomnomnom/gf@latest)
+	$(call go_install,subjack,github.com/haccer/subjack@latest)
+	$(call go_install,subzy,github.com/PentestPad/subzy@latest)
+	$(call go_install,dalfox,github.com/hahwul/dalfox/v2@latest)
+	$(call go_install,crlfuzz,github.com/dwisiswant0/crlfuzz/cmd/crlfuzz@latest)
+	$(call go_install,ffuf,github.com/ffuf/ffuf/v2@latest)
+	$(call go_install,gobuster,github.com/OJ/gobuster/v3@latest)
+	$(call go_install,hakrawler,github.com/hakluke/hakrawler@latest)
+	$(call go_install,subjs,github.com/lc/subjs@latest)
+	$(call go_install,getJS,github.com/003random/getJS@latest)
+	$(call go_install,github-subdomains,github.com/gwen001/github-subdomains@latest)
+	$(call go_install,puredns,github.com/d3mondev/puredns/v2@latest)
+	$(call go_install,shuffledns,github.com/projectdiscovery/shuffledns/cmd/shuffledns@latest)
+	@echo "[+] Go tools done."
 
 install-pip-tools:
-	@echo "[*] Installing Python tools..."
-	-pipx install wafw00f
-	-pipx install arjun
-	-pipx install paramspider
-	-pipx install uro
-	-pipx install sslyze
-	-pipx install dirsearch
-	-pipx install trufflehog
-	@echo "[+] Python tools installed."
+	@echo "[*] Checking Python tools..."
+	$(call pipx_install,wafw00f,wafw00f)
+	$(call pipx_install,arjun,arjun)
+	$(call pipx_install,paramspider,paramspider)
+	$(call pipx_install,uro,uro)
+	$(call pipx_install,sslyze,sslyze)
+	$(call pipx_install,dirsearch,dirsearch)
+	$(call pipx_install,trufflehog,trufflehog)
+	@echo "[+] Python tools done."
 
 install-apt-tools:
-	@echo "[*] Installing apt tools..."
-	sudo apt install -y nmap nikto whatweb wpscan sqlmap commix massdns dnsrecon feroxbuster seclists
-	@echo "[+] Apt tools installed."
+	@echo "[*] Checking apt tools..."
+	$(call apt_install,nmap,nmap)
+	$(call apt_install,nikto,nikto)
+	$(call apt_install,whatweb,whatweb)
+	$(call apt_install,wpscan,wpscan)
+	$(call apt_install,sqlmap,sqlmap)
+	$(call apt_install,commix,commix)
+	$(call apt_install,massdns,massdns)
+	$(call apt_install,dnsrecon,dnsrecon)
+	$(call apt_install,feroxbuster,feroxbuster)
+	@echo "[+] Apt tools done."
 
 install-all-tools: install-go-tools install-pip-tools install-apt-tools
-	@echo "[*] Updating nuclei templates..."
-	nuclei -update-templates
-	@echo "[*] Installing gf patterns..."
-	mkdir -p ~/.gf
-	git clone https://github.com/1ndianl33t/Gf-Patterns.git /tmp/gf-patterns 2>/dev/null || true
-	cp /tmp/gf-patterns/*.json ~/.gf/ 2>/dev/null || true
+	@if ! command -v nuclei >/dev/null 2>&1; then echo "[!] nuclei not found, skipping template update"; else nuclei -update-templates; fi
+	@mkdir -p ~/.gf
+	@if [ ! -f ~/.gf/xss.json ]; then \
+		echo "[*] Installing gf patterns..."; \
+		git clone https://github.com/1ndianl33t/Gf-Patterns.git /tmp/gf-patterns 2>/dev/null || true; \
+		cp /tmp/gf-patterns/*.json ~/.gf/ 2>/dev/null || true; \
+	else \
+		echo "  [ok] gf patterns already installed"; \
+	fi
 	@echo "[+] All done. Run: r0zscope -check"
