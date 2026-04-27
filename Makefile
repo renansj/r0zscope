@@ -99,13 +99,38 @@ install-pip-tools:
 	$(call pipx_install,sslyze,sslyze)
 	$(call pipx_install,dirsearch,dirsearch)
 	$(call pipx_install,trufflehog,trufflehog)
-	$(call pipx_install,linkfinder,linkfinder)
-	$(call pipx_install,corsy,corsy)
-	@if command -v SecretFinder >/dev/null 2>&1 || command -v secretfinder >/dev/null 2>&1; then \
+	@if command -v linkfinder >/dev/null 2>&1; then \
+		echo "  [ok] linkfinder already installed"; \
+	else \
+		echo "  [*] Installing linkfinder (git clone)..."; \
+		rm -rf /opt/LinkFinder; \
+		git clone https://github.com/GerbenJavado/LinkFinder.git /opt/LinkFinder 2>/dev/null && \
+		cd /opt/LinkFinder && pip3 install -r requirements.txt --break-system-packages 2>/dev/null && \
+		chmod +x /opt/LinkFinder/linkfinder.py && \
+		sudo ln -sf /opt/LinkFinder/linkfinder.py /usr/local/bin/linkfinder || \
+		echo "  [!] Failed to install linkfinder"; \
+	fi
+	@if command -v SecretFinder >/dev/null 2>&1 || [ -f /opt/SecretFinder/SecretFinder.py ]; then \
 		echo "  [ok] secretfinder already installed"; \
 	else \
-		echo "  [*] Installing secretfinder..."; \
-		pipx install git+https://github.com/m4ll0k/SecretFinder.git || echo "  [!] Failed to install secretfinder"; \
+		echo "  [*] Installing secretfinder (git clone)..."; \
+		rm -rf /opt/SecretFinder; \
+		git clone https://github.com/m4ll0k/SecretFinder.git /opt/SecretFinder 2>/dev/null && \
+		cd /opt/SecretFinder && pip3 install -r requirements.txt --break-system-packages 2>/dev/null && \
+		chmod +x /opt/SecretFinder/SecretFinder.py && \
+		sudo ln -sf /opt/SecretFinder/SecretFinder.py /usr/local/bin/SecretFinder || \
+		echo "  [!] Failed to install secretfinder"; \
+	fi
+	@if command -v corsy >/dev/null 2>&1 || [ -f /opt/Corsy/corsy.py ]; then \
+		echo "  [ok] corsy already installed"; \
+	else \
+		echo "  [*] Installing corsy (git clone)..."; \
+		rm -rf /opt/Corsy; \
+		git clone https://github.com/s0md3v/Corsy.git /opt/Corsy 2>/dev/null && \
+		cd /opt/Corsy && pip3 install -r requirements.txt --break-system-packages 2>/dev/null && \
+		chmod +x /opt/Corsy/corsy.py && \
+		sudo ln -sf /opt/Corsy/corsy.py /usr/local/bin/corsy || \
+		echo "  [!] Failed to install corsy"; \
 	fi
 	@echo "[+] Python tools done."
 

@@ -301,7 +301,7 @@ func AllTools() []ToolInfo {
 		{
 			Name:        "linkfinder",
 			Binary:      "linkfinder",
-			InstallCmd:  "pipx install linkfinder",
+			InstallCmd:  "git clone https://github.com/GerbenJavado/LinkFinder.git /opt/LinkFinder && sudo ln -sf /opt/LinkFinder/linkfinder.py /usr/local/bin/linkfinder",
 			Description: "Endpoint extraction from JavaScript files",
 			Required:    false,
 			Category:    "js",
@@ -309,7 +309,7 @@ func AllTools() []ToolInfo {
 		{
 			Name:        "secretfinder",
 			Binary:      "SecretFinder",
-			InstallCmd:  "pipx install git+https://github.com/m4ll0k/SecretFinder.git",
+			InstallCmd:  "git clone https://github.com/m4ll0k/SecretFinder.git /opt/SecretFinder && sudo ln -sf /opt/SecretFinder/SecretFinder.py /usr/local/bin/SecretFinder",
 			Description: "Secret/API key extraction from JavaScript",
 			Required:    false,
 			Category:    "js",
@@ -420,7 +420,7 @@ func AllTools() []ToolInfo {
 		{
 			Name:        "corsy",
 			Binary:      "corsy",
-			InstallCmd:  "pipx install corsy",
+			InstallCmd:  "git clone https://github.com/s0md3v/Corsy.git /opt/Corsy && sudo ln -sf /opt/Corsy/corsy.py /usr/local/bin/corsy",
 			Description: "CORS misconfiguration scanner",
 			Required:    false,
 			Category:    "vuln",
