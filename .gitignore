@@ -1,0 +1,11 @@
+build/
+dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+.DS_Store
+recon-output/
