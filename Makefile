@@ -94,7 +94,7 @@ install-pip-tools:
 	@echo "[*] Checking Python tools..."
 	$(call pipx_install,wafw00f,wafw00f)
 	$(call pipx_install,arjun,arjun)
-	$(call pipx_install,paramspider,paramspider)
+	$(call pipx_install,paramspider,git+https://github.com/devanshbatham/ParamSpider.git)
 	$(call pipx_install,uro,uro)
 	$(call pipx_install,sslyze,sslyze)
 	$(call pipx_install,dirsearch,dirsearch)
