@@ -188,28 +188,30 @@ func ContentDiscovery(ctx context.Context, cfg *config.Config, exec *runner.Exec
 			arjunLimit = len(aliveURLs)
 		}
 
+		var awg sync.WaitGroup
+		sem := make(chan struct{}, 3)
 		for _, url := range aliveURLs[:arjunLimit] {
 			cleanURL := strings.Fields(url)[0]
 			if !strings.HasPrefix(cleanURL, "http") {
 				cleanURL = "https://" + cleanURL
 			}
 
-			safeName := strings.NewReplacer("://", "_", "/", "_", ":", "_").Replace(cleanURL)
-			outFile := exec.OutputPath("arjun", fmt.Sprintf("%s.json", safeName))
+			awg.Add(1)
+			go func(u string) {
+				defer awg.Done()
+				sem <- struct{}{}
+				defer func() { <-sem }()
 
-			args := []string{
-				"-u", cleanURL,
-				"-oJ", outFile,
-				"-t", fmt.Sprintf("%d", cfg.Threads/2),
-				"--stable",
-			}
-
-			exec.RunCommand(ctx, "arjun", args, nil)
-			lines := runner.CountLines(outFile)
-			if lines > 0 {
-				green.Printf("  [✓] arjun [%s]: parameters found\n", cleanURL)
-			}
+				safeName := strings.NewReplacer("://", "_", "/", "_", ":", "_").Replace(u)
+				outFile := exec.OutputPath("arjun", fmt.Sprintf("%s.json", safeName))
+				exec.RunCommand(ctx, "arjun", []string{"-u", u, "-oJ", outFile, "-t", fmt.Sprintf("%d", cfg.Threads/2), "--stable"}, nil)
+				lines := runner.CountLines(outFile)
+				if lines > 0 {
+					green.Printf("  [✓] arjun [%s]: parameters found\n", u)
+				}
+			}(cleanURL)
 		}
+		awg.Wait()
 
 		exec.AddResult(runner.ModuleResult{Module: "arjun", Success: true, OutputDir: exec.ModuleDir("arjun"), Duration: time.Since(start)})
 	}

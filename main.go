@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -64,17 +65,17 @@ func main() {
 		flag.PrintDefaults()
 		fmt.Fprintf(os.Stderr, `
 Phases (execution order):
-  subdomains    Subdomain enumeration (subfinder, assetfinder, amass, findomain, crt.sh)
-  dns           DNS resolution & enumeration (dnsx, dnsrecon)
-  httpprobe     HTTP probing (httpx, httprobe)
-  fingerprint   WAF detection & fingerprinting (wafw00f, whatweb)
-  portscan      Port scanning (naabu, nmap)
-  urls          URL discovery (waybackurls, gau, katana, gospider, hakrawler, unfurl, gf)
-  content       Directory/content discovery (ffuf, feroxbuster, gobuster, arjun)
-  jsanalysis    JavaScript analysis on local files (linkfinder, SecretFinder, trufflehog)
-  takeover      Subdomain takeover (subjack, subzy)
-  vulnscan      Vulnerability scanning (nuclei, nikto, dalfox, sqlmap, crlfuzz, corsy, wpscan, commix)
-  ssl           SSL/TLS analysis (testssl, sslyze)
+  subdomains    Subdomain enumeration
+  dns           DNS resolution & enumeration
+  httpprobe     HTTP probing
+  fingerprint   WAF detection & fingerprinting
+  portscan      Port scanning
+  urls          URL discovery
+  content       Directory/content discovery
+  jsanalysis    JavaScript analysis on local files
+  takeover      Subdomain takeover
+  vulnscan      Vulnerability scanning
+  ssl           SSL/TLS analysis
 
 Examples:
   r0zscope -target example.com
@@ -83,7 +84,6 @@ Examples:
   r0zscope -target example.com -only subdomains,httpprobe,vulnscan
   r0zscope -target example.com -skip portscan,ssl,content
   r0zscope -target test.htb -ctf
-  r0zscope -target test.htb -ctf -vhost-wordlist /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt
   r0zscope -check
   r0zscope -install
 `)
@@ -239,7 +239,7 @@ Examples:
 	}()
 
 	totalStart := time.Now()
-	exec := runner.NewExecutor(cfg)
+	e := runner.NewExecutor(cfg)
 
 	green.Printf("[+] Starting recon on: %s\n", cfg.Target)
 	fmt.Printf("    Output:  %s\n", cfg.OutputDir)
@@ -250,88 +250,115 @@ Examples:
 	if cfg.Proxy != "" {
 		fmt.Printf("    Proxy:   %s\n", cfg.Proxy)
 	}
-	if cfg.SubdomainWordlist != "" {
-		fmt.Printf("    Wordlist: %s\n", cfg.SubdomainWordlist)
-	}
 
 	os.MkdirAll(cfg.OutputDir, 0755)
 
+	// ── STAGE 1: Subdomain enumeration (must run first) ──
 	if shouldRun("subdomains") {
-		modules.SubdomainEnum(ctx, cfg, exec)
+		modules.SubdomainEnum(ctx, cfg, e)
 		if ctx.Err() != nil {
 			goto report
 		}
 	}
 
-	if shouldRun("dns") && !cfg.CTFMode {
-		modules.DNSResolution(ctx, cfg, exec)
+	// ── STAGE 2: DNS + HTTP probe in parallel (both need subdomains) ──
+	{
+		var wg sync.WaitGroup
+		if shouldRun("dns") && !cfg.CTFMode {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				modules.DNSResolution(ctx, cfg, e)
+			}()
+		}
+		if shouldRun("httpprobe") {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				modules.HTTPProbe(ctx, cfg, e)
+			}()
+		}
+		wg.Wait()
 		if ctx.Err() != nil {
 			goto report
 		}
 	}
 
-	if shouldRun("httpprobe") {
-		modules.HTTPProbe(ctx, cfg, exec)
+	// ── STAGE 3: Everything that needs alive hosts, in parallel ──
+	{
+		var wg sync.WaitGroup
+
+		if shouldRun("fingerprint") {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				modules.Fingerprint(ctx, cfg, e)
+			}()
+		}
+		if shouldRun("portscan") {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				modules.PortScan(ctx, cfg, e)
+			}()
+		}
+		if shouldRun("takeover") && !cfg.CTFMode {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				modules.SubdomainTakeover(ctx, cfg, e)
+			}()
+		}
+		if shouldRun("ssl") {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				modules.SSLAnalysis(ctx, cfg, e)
+			}()
+		}
+		if shouldRun("urls") {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				modules.URLDiscovery(ctx, cfg, e)
+			}()
+		}
+		wg.Wait()
 		if ctx.Err() != nil {
 			goto report
 		}
 	}
 
-	if shouldRun("fingerprint") {
-		modules.Fingerprint(ctx, cfg, exec)
-		if ctx.Err() != nil {
-			goto report
-		}
-	}
+	// ── STAGE 4: Content discovery + JS analysis + vuln scan in parallel (need URLs) ──
+	{
+		var wg sync.WaitGroup
 
-	if shouldRun("portscan") {
-		modules.PortScan(ctx, cfg, exec)
-		if ctx.Err() != nil {
-			goto report
+		if shouldRun("content") {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				modules.ContentDiscovery(ctx, cfg, e)
+			}()
 		}
-	}
-
-	if shouldRun("urls") {
-		modules.URLDiscovery(ctx, cfg, exec)
-		if ctx.Err() != nil {
-			goto report
+		if shouldRun("jsanalysis") {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				modules.JSAnalysis(ctx, cfg, e)
+			}()
 		}
-	}
-
-	if shouldRun("content") {
-		modules.ContentDiscovery(ctx, cfg, exec)
-		if ctx.Err() != nil {
-			goto report
+		if shouldRun("vulnscan") {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				modules.VulnScan(ctx, cfg, e)
+			}()
 		}
-	}
-
-	if shouldRun("jsanalysis") {
-		modules.JSAnalysis(ctx, cfg, exec)
-		if ctx.Err() != nil {
-			goto report
-		}
-	}
-
-	if shouldRun("takeover") && !cfg.CTFMode {
-		modules.SubdomainTakeover(ctx, cfg, exec)
-		if ctx.Err() != nil {
-			goto report
-		}
-	}
-
-	if shouldRun("vulnscan") {
-		modules.VulnScan(ctx, cfg, exec)
-		if ctx.Err() != nil {
-			goto report
-		}
-	}
-
-	if shouldRun("ssl") {
-		modules.SSLAnalysis(ctx, cfg, exec)
+		wg.Wait()
 	}
 
 report:
-	modules.GenerateReport(cfg, exec, totalStart)
+	modules.GenerateReport(cfg, e, totalStart)
 	green.Println("[+] Recon finished.")
 }
 

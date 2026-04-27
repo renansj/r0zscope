@@ -122,20 +122,33 @@ func VulnScan(ctx context.Context, cfg *config.Config, exec *runner.Executor) {
 			}
 
 			var allResults []string
+			var mu sync.Mutex
+			sem := make(chan struct{}, 3)
+			var nwg sync.WaitGroup
+
 			for _, url := range aliveURLs[:limit] {
 				cleanURL := strings.Fields(url)[0]
 				if !strings.HasPrefix(cleanURL, "http") {
 					cleanURL = "https://" + cleanURL
 				}
 
-				output, err := exec.RunCommand(ctx, "nikto",
-					[]string{"-h", cleanURL, "-Tuning", "1234567890abc", "-timeout", "10", "-nointeractive"}, nil)
+				nwg.Add(1)
+				go func(u string) {
+					defer nwg.Done()
+					sem <- struct{}{}
+					defer func() { <-sem }()
 
-				if err == nil && len(output) > 0 {
-					allResults = append(allResults, fmt.Sprintf("=== %s ===", cleanURL))
-					allResults = append(allResults, string(output))
-				}
+					output, err := exec.RunCommand(ctx, "nikto",
+						[]string{"-h", u, "-Tuning", "1234567890abc", "-timeout", "10", "-nointeractive"}, nil)
+					if err == nil && len(output) > 0 {
+						mu.Lock()
+						allResults = append(allResults, fmt.Sprintf("=== %s ===", u))
+						allResults = append(allResults, string(output))
+						mu.Unlock()
+					}
+				}(cleanURL)
 			}
+			nwg.Wait()
 
 			outFile := exec.OutputPath("nikto", "findings.txt")
 			if len(allResults) > 0 {

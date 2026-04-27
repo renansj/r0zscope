@@ -42,22 +42,35 @@ func Fingerprint(ctx context.Context, cfg *config.Config, exec *runner.Executor)
 			aliveURLs := readLines(aliveFile)
 
 			var results []string
+			var mu sync.Mutex
 			limit := 50
 			if len(aliveURLs) < limit {
 				limit = len(aliveURLs)
 			}
 
+			sem := make(chan struct{}, cfg.Threads)
+			var wwg sync.WaitGroup
 			for _, url := range aliveURLs[:limit] {
 				cleanURL := strings.Fields(url)[0]
 				if !strings.HasPrefix(cleanURL, "http") {
 					cleanURL = "https://" + cleanURL
 				}
 
-				output, err := exec.RunCommand(ctx, "wafw00f", []string{cleanURL, "-o", "-"}, nil)
-				if err == nil && len(output) > 0 {
-					results = append(results, fmt.Sprintf("%s: %s", cleanURL, strings.TrimSpace(string(output))))
-				}
+				wwg.Add(1)
+				go func(u string) {
+					defer wwg.Done()
+					sem <- struct{}{}
+					defer func() { <-sem }()
+
+					output, err := exec.RunCommand(ctx, "wafw00f", []string{u, "-o", "-"}, nil)
+					if err == nil && len(output) > 0 {
+						mu.Lock()
+						results = append(results, fmt.Sprintf("%s: %s", u, strings.TrimSpace(string(output))))
+						mu.Unlock()
+					}
+				}(cleanURL)
 			}
+			wwg.Wait()
 
 			if len(results) > 0 {
 				writeLines(outFile, results)
