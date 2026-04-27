@@ -34,8 +34,13 @@ const banner = `
    ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝     ╚══════╝
 
    By R0Z (Renan Zapelini)
-
 `
+
+func printBanner() {
+	cyan := color.New(color.FgCyan)
+	cyan.Print(banner)
+	fmt.Printf("   Version: %s (%s)\n\n", version, commit)
+}
 
 func main() {
 	target := flag.String("target", "", "Target domain (required)")
@@ -50,6 +55,7 @@ func main() {
 	wordlist := flag.String("wordlist", "", "Wordlist for subdomain brute-force")
 	vhostWordlist := flag.String("vhost-wordlist", "", "Wordlist for vhost brute-force (CTF mode)")
 	ctfMode := flag.Bool("ctf", false, "CTF mode - local target via /etc/hosts, vhost brute-force, no internet tools")
+	showVersion := flag.Bool("version", false, "Show version and exit")
 	checkOnly := flag.Bool("check", false, "Check installed tools only")
 	installScript := flag.Bool("install-script", false, "Generate install script")
 	installMissing := flag.Bool("install", false, "Install missing tools")
@@ -58,8 +64,7 @@ func main() {
 	onlyPhases := flag.String("only", "", "Run only these phases (comma-separated)")
 
 	flag.Usage = func() {
-		cyan := color.New(color.FgCyan)
-		cyan.Print(banner)
+		printBanner()
 		fmt.Fprintf(os.Stderr, "Usage: r0zscope -target <domain> [options]\n\n")
 		fmt.Fprintf(os.Stderr, "Options:\n")
 		flag.PrintDefaults()
@@ -91,12 +96,15 @@ Examples:
 
 	flag.Parse()
 
-	cyan := color.New(color.FgCyan)
 	red := color.New(color.FgRed, color.Bold)
 	green := color.New(color.FgGreen, color.Bold)
 	yellow := color.New(color.FgYellow)
 
-	cyan.Print(banner)
+	printBanner()
+
+	if *showVersion {
+		os.Exit(0)
+	}
 
 	if *genConfig != "" {
 		if err := config.SaveExample(*genConfig); err != nil {
