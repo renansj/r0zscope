@@ -100,8 +100,6 @@ func URLDiscovery(ctx context.Context, cfg *config.Config, exec *runner.Executor
 			fmt.Println("  [*] katana - active crawling with JS parsing + response download...")
 
 			outFile := exec.OutputPath("katana", "urls.txt")
-			jsStoreDir := exec.OutputPath("katana", "js-responses")
-			exec.EnsureDir(jsStoreDir)
 
 			args := []string{
 				"-list", aliveFile,
@@ -113,8 +111,6 @@ func URLDiscovery(ctx context.Context, cfg *config.Config, exec *runner.Executor
 				"-silent",
 				"-c", fmt.Sprintf("%d", cfg.Threads),
 				"-timeout", "10",
-				"-sr",
-				"-srd", jsStoreDir,
 			}
 			if cfg.InScope {
 				args = append(args, "-fs", "fqdn")

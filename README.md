@@ -103,7 +103,7 @@ What changes in CTF mode:
 | 8 | Vulnerability scanning | nuclei, nikto, dalfox, sqlmap, crlfuzz, corsy, wpscan, commix |
 | 9 | SSL/TLS analysis | sslyze, testssl.sh |
 
-JS analysis runs on **locally downloaded files** - katana saves responses to disk with `-store-response`, then linkfinder, SecretFinder, trufflehog, and semgrep analyze the files directly instead of making redundant HTTP requests. If katana doesn't capture enough JS files, r0zscope downloads them from discovered URLs as a fallback.
+JS analysis runs on **locally downloaded files** - JS URLs discovered by katana/gospider/waybackurls are filtered, downloaded via wget in parallel, then linkfinder, SecretFinder, trufflehog, and semgrep analyze the local files. Each analysis tool runs in its own goroutine, and linkfinder/SecretFinder process individual files with parallel workers.
 
 ---
 
@@ -158,8 +158,9 @@ recon-output/example.com/
 ├── subfinder/
 ├── assetfinder/
 ├── katana/
-│   ├── urls.txt
-│   └── js-responses/          ← JS files saved to disk
+│   └── urls.txt
+├── _jsfiles/
+│   └── downloaded/            ← JS files downloaded via wget
 ├── linkfinder/
 │   └── endpoints.txt          ← extracted from local JS
 ├── secretfinder/
