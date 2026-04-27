@@ -348,15 +348,8 @@ func VulnScan(ctx context.Context, cfg *config.Config, exec *runner.Executor) {
 
 			wpHosts := detectWordPress(exec)
 			if len(wpHosts) == 0 {
-				aliveURLs := readLines(aliveFile)
-				limit := 5
-				if len(aliveURLs) < limit {
-					limit = len(aliveURLs)
-				}
-				wpHosts = aliveURLs[:limit]
-			}
-
-			if len(wpHosts) == 0 {
+				green.Printf("  [✓] wpscan: no WordPress detected, skipping\n")
+				exec.AddResult(runner.ModuleResult{Module: "wpscan", Success: true, Lines: 0, Duration: time.Since(modStart)})
 				return
 			}
 

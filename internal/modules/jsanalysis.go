@@ -218,7 +218,13 @@ func JSAnalysis(ctx context.Context, cfg *config.Config, exec *runner.Executor) 
 				exec.AddResult(runner.ModuleResult{Module: "trufflehog", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
 				return
 			}
+
+			// Try v3 syntax first (Go version), fall back to v2 (pip)
 			out, err := exec.RunCommand(ctx, "trufflehog", []string{"filesystem", jsDir, "--no-update", "--json"}, nil)
+			if err != nil {
+				// v2 pip version doesn't support filesystem, use grep-based approach
+				out, err = exec.RunCommand(ctx, "trufflehog", []string{"--regex", "--entropy=True", jsDir}, nil)
+			}
 
 			lines := 0
 			if err == nil && len(out) > 0 {
@@ -251,12 +257,12 @@ func JSAnalysis(ctx context.Context, cfg *config.Config, exec *runner.Executor) 
 			}
 
 			exec.RunCommand(ctx, "semgrep", []string{
-				"scan", "--config", "auto", "--lang", "js",
+				"scan", "--config", "auto",
 				"--json", "--output", outJSON, "--quiet", jsDir,
 			}, nil)
 
 			exec.RunCommand(ctx, "semgrep", []string{
-				"scan", "--config", "auto", "--lang", "js",
+				"scan", "--config", "auto",
 				"--output", outFile, "--quiet", jsDir,
 			}, nil)
 

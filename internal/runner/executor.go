@@ -70,6 +70,20 @@ func (e *Executor) RunCommand(ctx context.Context, name string, args []string, s
 	ctx, cancel := context.WithTimeout(ctx, e.cfg.ToolTimeout)
 	defer cancel()
 
+	// Pre-create output directories for -o, --output, -oN, -oJ flags
+	for i, arg := range args {
+		if i == 0 {
+			continue
+		}
+		prev := args[i-1]
+		if prev == "-o" || prev == "--output" || prev == "-oN" || prev == "-oX" || prev == "-oJ" || prev == "-jo" || prev == "-w" || prev == "-u" {
+			dir := filepath.Dir(arg)
+			if dir != "" && dir != "." {
+				os.MkdirAll(dir, 0755)
+			}
+		}
+	}
+
 	cmd := exec.CommandContext(ctx, name, args...)
 	if stdin != nil {
 		cmd.Stdin = stdin

@@ -244,15 +244,17 @@ func URLDiscovery(ctx context.Context, cfg *config.Config, exec *runner.Executor
 			}
 			args := []string{
 				"-d", cfg.Target,
-				"-o", outFile,
 			}
 
-			_, err := exec.RunCommand(ctx, "paramspider", args, nil)
+			output, _ := exec.RunCommand(ctx, "paramspider", args, nil)
+			if len(output) > 0 {
+				writeLines(outFile, []string{string(output)})
+			}
 			lines := runner.CountLines(outFile)
 
-			if err != nil && lines == 0 {
-				yellow.Printf("  [~] paramspider failed: %v\n", err)
-				exec.AddResult(runner.ModuleResult{Module: "paramspider", Success: false, Error: err, Duration: time.Since(modStart)})
+			if lines == 0 {
+				yellow.Printf("  [~] paramspider: no results\n")
+				exec.AddResult(runner.ModuleResult{Module: "paramspider", Success: true, Duration: time.Since(modStart)})
 				return
 			}
 
