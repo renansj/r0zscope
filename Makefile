@@ -65,7 +65,13 @@ install-go-tools:
 
 install-pip-tools:
 	@echo "[*] Installing Python tools..."
-	pip3 install wafw00f arjun paramspider uro sslyze dirsearch trufflehog
+	-pipx install wafw00f
+	-pipx install arjun
+	-pipx install paramspider
+	-pipx install uro
+	-pipx install sslyze
+	-pipx install dirsearch
+	-pipx install trufflehog
 	@echo "[+] Python tools installed."
 
 install-apt-tools:
