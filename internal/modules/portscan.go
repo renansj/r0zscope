@@ -47,6 +47,11 @@ func PortScan(ctx context.Context, cfg *config.Config, exec *runner.Executor) {
 			fmt.Println("  [*] naabu - fast port scan (top 1000)...")
 
 			outFile := exec.OutputPath("naabu", "ports.txt")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] naabu: output already exists\n")
+				exec.AddResult(runner.ModuleResult{Module: "naabu", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
 			args := []string{
 				"-list", inputFile,
 				"-o", outFile,
@@ -78,6 +83,11 @@ func PortScan(ctx context.Context, cfg *config.Config, exec *runner.Executor) {
 			fmt.Println("  [*] nmap - service detection (top 100)...")
 
 			outFile := exec.OutputPath("nmap", "services.txt")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] nmap: output already exists\n")
+				exec.AddResult(runner.ModuleResult{Module: "nmap", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
 			xmlFile := exec.OutputPath("nmap", "scan.xml")
 
 			hosts := readLines(inputFile)

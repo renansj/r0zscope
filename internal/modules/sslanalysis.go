@@ -70,6 +70,11 @@ func SSLAnalysis(ctx context.Context, cfg *config.Config, exec *runner.Executor)
 			fmt.Println("  [*] sslyze - SSL/TLS analysis...")
 
 			outFile := exec.OutputPath("sslyze", "results.txt")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] sslyze: output already exists\n")
+				exec.AddResult(runner.ModuleResult{Module: "sslyze", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
 			args := []string{"--regular"}
 			args = append(args, httpsHosts[:limit]...)
 
@@ -99,6 +104,13 @@ func SSLAnalysis(ctx context.Context, cfg *config.Config, exec *runner.Executor)
 
 			fmt.Printf("  [*] testssl - deep analysis on %d hosts...\n", testsslLimit)
 
+			outFile := exec.OutputPath("testssl", "results.txt")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] testssl: output already exists\n")
+				exec.AddResult(runner.ModuleResult{Module: "testssl", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
+
 			var allResults []string
 			for _, host := range httpsHosts[:testsslLimit] {
 				binary := "testssl"
@@ -115,7 +127,7 @@ func SSLAnalysis(ctx context.Context, cfg *config.Config, exec *runner.Executor)
 				}
 			}
 
-			outFile := exec.OutputPath("testssl", "results.txt")
+			outFile = exec.OutputPath("testssl", "results.txt")
 			if len(allResults) > 0 {
 				writeLines(outFile, allResults)
 			}

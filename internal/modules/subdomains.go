@@ -54,6 +54,12 @@ func SubdomainEnum(ctx context.Context, cfg *config.Config, exec *runner.Executo
 		fmt.Println("  [*] subfinder - passive enumeration...")
 
 		outFile := exec.OutputPath("subfinder", "subdomains.txt")
+		if alreadyDone(outFile) {
+			green.Printf("  [skip] subfinder: output already exists\n")
+			addOutput(outFile)
+			exec.AddResult(runner.ModuleResult{Module: "subfinder", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+			return
+		}
 		args := []string{
 			"-d", cfg.Target,
 			"-all",
@@ -88,6 +94,12 @@ func SubdomainEnum(ctx context.Context, cfg *config.Config, exec *runner.Executo
 		fmt.Println("  [*] assetfinder - asset discovery...")
 
 		outFile := exec.OutputPath("assetfinder", "subdomains.txt")
+		if alreadyDone(outFile) {
+			green.Printf("  [skip] assetfinder: output already exists\n")
+			addOutput(outFile)
+			exec.AddResult(runner.ModuleResult{Module: "assetfinder", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+			return
+		}
 		lines, err := exec.RunCommandToFile(ctx, "assetfinder", []string{"--subs-only", cfg.Target}, outFile, nil)
 
 		if err != nil && lines == 0 {
@@ -109,6 +121,12 @@ func SubdomainEnum(ctx context.Context, cfg *config.Config, exec *runner.Executo
 			fmt.Println("  [*] amass - passive OSINT enum...")
 
 			outFile := exec.OutputPath("amass", "subdomains.txt")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] amass: output already exists\n")
+				addOutput(outFile)
+				exec.AddResult(runner.ModuleResult{Module: "amass", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
 			args := []string{"enum", "-passive", "-d", cfg.Target, "-o", outFile}
 
 			_, err := exec.RunCommand(ctx, "amass", args, nil)
@@ -134,6 +152,12 @@ func SubdomainEnum(ctx context.Context, cfg *config.Config, exec *runner.Executo
 			fmt.Println("  [*] findomain - fast enumeration (Rust)...")
 
 			outFile := exec.OutputPath("findomain", "subdomains.txt")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] findomain: output already exists\n")
+				addOutput(outFile)
+				exec.AddResult(runner.ModuleResult{Module: "findomain", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
 			args := []string{"-t", cfg.Target, "-u", outFile, "-q"}
 
 			_, err := exec.RunCommand(ctx, "findomain", args, nil)
@@ -158,6 +182,12 @@ func SubdomainEnum(ctx context.Context, cfg *config.Config, exec *runner.Executo
 		fmt.Println("  [*] crt.sh - Certificate Transparency logs...")
 
 		outFile := exec.OutputPath("crtsh", "subdomains.txt")
+		if alreadyDone(outFile) {
+			green.Printf("  [skip] crtsh: output already exists\n")
+			addOutput(outFile)
+			exec.AddResult(runner.ModuleResult{Module: "crt.sh", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+			return
+		}
 		lines := queryCrtSh(ctx, cfg.Target, outFile)
 
 		if lines == 0 {
@@ -179,6 +209,12 @@ func SubdomainEnum(ctx context.Context, cfg *config.Config, exec *runner.Executo
 			fmt.Println("  [*] github-subdomains - scraping GitHub...")
 
 			outFile := exec.OutputPath("github-subdomains", "subdomains.txt")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] github-subdomains: output already exists\n")
+				addOutput(outFile)
+				exec.AddResult(runner.ModuleResult{Module: "github-subdomains", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
 			args := []string{"-d", cfg.Target, "-o", outFile, "-q"}
 
 			_, err := exec.RunCommand(ctx, "github-subdomains", args, nil)

@@ -45,16 +45,21 @@ func JSAnalysis(ctx context.Context, cfg *config.Config, exec *runner.Executor) 
 		modStart := time.Now()
 		fmt.Println("  [*] subjs - extracting JS URLs from hosts...")
 		outFile := exec.OutputPath("subjs", "js-files.txt")
-		lines, err := exec.RunCommandToFile(ctx, "subjs", []string{"-i", aliveFile}, outFile, nil)
-		if err == nil && lines > 0 {
-			green.Printf("  [✓] subjs: %d JS URLs found (%v)\n", lines, time.Since(modStart).Round(time.Second))
-			if runner.FileExists(jsURLsFile) {
-				runner.MergeFiles(jsURLsFile, jsURLsFile, outFile)
-			} else {
-				runner.MergeFiles(jsURLsFile, outFile)
+		if alreadyDone(outFile) {
+			green.Printf("  [skip] subjs: output already exists\n")
+			exec.AddResult(runner.ModuleResult{Module: "subjs", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+		} else {
+			lines, err := exec.RunCommandToFile(ctx, "subjs", []string{"-i", aliveFile}, outFile, nil)
+			if err == nil && lines > 0 {
+				green.Printf("  [✓] subjs: %d JS URLs found (%v)\n", lines, time.Since(modStart).Round(time.Second))
+				if runner.FileExists(jsURLsFile) {
+					runner.MergeFiles(jsURLsFile, jsURLsFile, outFile)
+				} else {
+					runner.MergeFiles(jsURLsFile, outFile)
+				}
 			}
+			exec.AddResult(runner.ModuleResult{Module: "subjs", Success: err == nil, OutputDir: outFile, Lines: lines, Duration: time.Since(modStart)})
 		}
-		exec.AddResult(runner.ModuleResult{Module: "subjs", Success: err == nil, OutputDir: outFile, Lines: lines, Duration: time.Since(modStart)})
 	}
 
 	if !runner.FileExists(jsURLsFile) {
@@ -95,6 +100,13 @@ func JSAnalysis(ctx context.Context, cfg *config.Config, exec *runner.Executor) 
 			seen := make(map[string]struct{})
 			var mu sync.Mutex
 
+			outFile := exec.OutputPath("linkfinder", "endpoints.txt")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] linkfinder: output already exists\n")
+				exec.AddResult(runner.ModuleResult{Module: "linkfinder", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
+
 			sem := make(chan struct{}, cfg.Threads)
 			var lwg sync.WaitGroup
 
@@ -124,7 +136,7 @@ func JSAnalysis(ctx context.Context, cfg *config.Config, exec *runner.Executor) 
 			}
 			lwg.Wait()
 
-			outFile := exec.OutputPath("linkfinder", "endpoints.txt")
+			outFile = exec.OutputPath("linkfinder", "endpoints.txt")
 			if len(results) > 0 {
 				writeLines(outFile, results)
 				green.Printf("  [✓] linkfinder: %d endpoints (%v)\n", len(results), time.Since(modStart).Round(time.Second))
@@ -145,6 +157,13 @@ func JSAnalysis(ctx context.Context, cfg *config.Config, exec *runner.Executor) 
 			var results []string
 			seen := make(map[string]struct{})
 			var mu sync.Mutex
+
+			outFile := exec.OutputPath("secretfinder", "secrets.txt")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] secretfinder: output already exists\n")
+				exec.AddResult(runner.ModuleResult{Module: "secretfinder", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
 
 			sem := make(chan struct{}, cfg.Threads)
 			var swg sync.WaitGroup
@@ -175,7 +194,7 @@ func JSAnalysis(ctx context.Context, cfg *config.Config, exec *runner.Executor) 
 			}
 			swg.Wait()
 
-			outFile := exec.OutputPath("secretfinder", "secrets.txt")
+			outFile = exec.OutputPath("secretfinder", "secrets.txt")
 			if len(results) > 0 {
 				writeLines(outFile, results)
 				red.Printf("  [!!!] SecretFinder: %d possible secrets! (%v)\n", len(results), time.Since(modStart).Round(time.Second))
@@ -194,6 +213,11 @@ func JSAnalysis(ctx context.Context, cfg *config.Config, exec *runner.Executor) 
 			fmt.Println("  [*] trufflehog - filesystem scan...")
 
 			outFile := exec.OutputPath("trufflehog", "secrets.txt")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] trufflehog: output already exists\n")
+				exec.AddResult(runner.ModuleResult{Module: "trufflehog", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
 			out, err := exec.RunCommand(ctx, "trufflehog", []string{"filesystem", jsDir, "--no-update", "--json"}, nil)
 
 			lines := 0
@@ -220,6 +244,11 @@ func JSAnalysis(ctx context.Context, cfg *config.Config, exec *runner.Executor) 
 
 			outJSON := exec.OutputPath("semgrep", "findings.json")
 			outFile := exec.OutputPath("semgrep", "findings.txt")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] semgrep: output already exists\n")
+				exec.AddResult(runner.ModuleResult{Module: "semgrep", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
 
 			exec.RunCommand(ctx, "semgrep", []string{
 				"scan", "--config", "auto", "--lang", "js",

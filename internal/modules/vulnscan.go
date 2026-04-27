@@ -47,6 +47,11 @@ func VulnScan(ctx context.Context, cfg *config.Config, exec *runner.Executor) {
 
 		fmt.Println("  [*] nuclei - main scan...")
 		outFile := exec.OutputPath("nuclei", "findings.txt")
+		if alreadyDone(outFile) {
+			green.Printf("  [skip] nuclei: output already exists\n")
+			exec.AddResult(runner.ModuleResult{Module: "nuclei", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+			return
+		}
 
 		args := []string{
 			"-l", aliveFile,
@@ -115,6 +120,13 @@ func VulnScan(ctx context.Context, cfg *config.Config, exec *runner.Executor) {
 			modStart := time.Now()
 			fmt.Println("  [*] nikto - classic web scanner...")
 
+			outFile := exec.OutputPath("nikto", "findings.txt")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] nikto: output already exists\n")
+				exec.AddResult(runner.ModuleResult{Module: "nikto", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
+
 			aliveURLs := readLines(aliveFile)
 			limit := 5
 			if len(aliveURLs) < limit {
@@ -150,7 +162,7 @@ func VulnScan(ctx context.Context, cfg *config.Config, exec *runner.Executor) {
 			}
 			nwg.Wait()
 
-			outFile := exec.OutputPath("nikto", "findings.txt")
+			outFile = exec.OutputPath("nikto", "findings.txt")
 			if len(allResults) > 0 {
 				writeLines(outFile, allResults)
 			}
@@ -169,6 +181,11 @@ func VulnScan(ctx context.Context, cfg *config.Config, exec *runner.Executor) {
 			fmt.Println("  [*] dalfox - XSS scanning...")
 
 			outFile := exec.OutputPath("dalfox", "xss-findings.txt")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] dalfox: output already exists\n")
+				exec.AddResult(runner.ModuleResult{Module: "dalfox", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
 			args := []string{
 				"file", paramURLs,
 				"-o", outFile,
@@ -199,6 +216,13 @@ func VulnScan(ctx context.Context, cfg *config.Config, exec *runner.Executor) {
 			defer wg.Done()
 			modStart := time.Now()
 			fmt.Println("  [*] sqlmap - SQL injection scanning (batch)...")
+
+			outFile := exec.OutputPath("sqlmap", "findings.txt")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] sqlmap: output already exists\n")
+				exec.AddResult(runner.ModuleResult{Module: "sqlmap", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
 
 			outDir := exec.ModuleDir("sqlmap")
 			exec.EnsureDir(outDir)
@@ -235,7 +259,7 @@ func VulnScan(ctx context.Context, cfg *config.Config, exec *runner.Executor) {
 				}
 			}
 
-			outFile := exec.OutputPath("sqlmap", "findings.txt")
+			outFile = exec.OutputPath("sqlmap", "findings.txt")
 			if len(findings) > 0 {
 				writeLines(outFile, findings)
 				color.New(color.FgRed, color.Bold).Printf("  [!!!] sqlmap: SQL injection found!\n")
@@ -254,6 +278,11 @@ func VulnScan(ctx context.Context, cfg *config.Config, exec *runner.Executor) {
 			fmt.Println("  [*] crlfuzz - CRLF injection scanning...")
 
 			outFile := exec.OutputPath("crlfuzz", "findings.txt")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] crlfuzz: output already exists\n")
+				exec.AddResult(runner.ModuleResult{Module: "crlfuzz", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
 			args := []string{
 				"-l", aliveFile,
 				"-o", outFile,
@@ -281,6 +310,11 @@ func VulnScan(ctx context.Context, cfg *config.Config, exec *runner.Executor) {
 			fmt.Println("  [*] corsy - CORS misconfiguration scanning...")
 
 			outFile := exec.OutputPath("corsy", "findings.json")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] corsy: output already exists\n")
+				exec.AddResult(runner.ModuleResult{Module: "corsy", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
 			args := []string{
 				"-i", aliveFile,
 				"-o", outFile,
@@ -304,6 +338,13 @@ func VulnScan(ctx context.Context, cfg *config.Config, exec *runner.Executor) {
 		go func() {
 			defer wg.Done()
 			modStart := time.Now()
+
+			outFile := exec.OutputPath("wpscan", "findings.txt")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] wpscan: output already exists\n")
+				exec.AddResult(runner.ModuleResult{Module: "wpscan", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
 
 			wpHosts := detectWordPress(exec)
 			if len(wpHosts) == 0 {
@@ -343,7 +384,7 @@ func VulnScan(ctx context.Context, cfg *config.Config, exec *runner.Executor) {
 				}
 			}
 
-			outFile := exec.OutputPath("wpscan", "findings.txt")
+			outFile = exec.OutputPath("wpscan", "findings.txt")
 			if len(allResults) > 0 {
 				writeLines(outFile, allResults)
 				green.Printf("  [✓] wpscan: %d hosts analyzed (%v)\n", len(wpHosts), time.Since(modStart).Round(time.Second))
@@ -358,6 +399,13 @@ func VulnScan(ctx context.Context, cfg *config.Config, exec *runner.Executor) {
 			defer wg.Done()
 			modStart := time.Now()
 			fmt.Println("  [*] commix - command injection scanning...")
+
+			outFile := exec.OutputPath("commix", "findings.txt")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] commix: output already exists\n")
+				exec.AddResult(runner.ModuleResult{Module: "commix", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
 
 			urls := readLines(paramURLs)
 			limit := 10
@@ -385,7 +433,7 @@ func VulnScan(ctx context.Context, cfg *config.Config, exec *runner.Executor) {
 				}
 			}
 
-			outFile := exec.OutputPath("commix", "findings.txt")
+			outFile = exec.OutputPath("commix", "findings.txt")
 			if len(findings) > 0 {
 				writeLines(outFile, findings)
 				color.New(color.FgRed, color.Bold).Printf("  [!!!] commix: command injection found!\n")

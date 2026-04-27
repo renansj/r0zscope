@@ -85,6 +85,11 @@ func ContentDiscovery(ctx context.Context, cfg *config.Config, exec *runner.Exec
 				safeName := strings.NewReplacer("://", "_", "/", "_", ":", "_").Replace(target)
 				outFile := exec.OutputPath("ffuf", fmt.Sprintf("%s.txt", safeName))
 
+				if alreadyDone(outFile) {
+					green.Printf("  [skip] ffuf [%s]: output already exists\n", target)
+					return
+				}
+
 				args := []string{
 					"-u", target + "/FUZZ",
 					"-w", wordlist,
@@ -123,6 +128,11 @@ func ContentDiscovery(ctx context.Context, cfg *config.Config, exec *runner.Exec
 				safeName := strings.NewReplacer("://", "_", "/", "_", ":", "_").Replace(target)
 				outFile := exec.OutputPath("feroxbuster", fmt.Sprintf("%s.txt", safeName))
 
+				if alreadyDone(outFile) {
+					green.Printf("  [skip] feroxbuster [%s]: output already exists\n", target)
+					return
+				}
+
 				args := []string{
 					"-u", target,
 					"-w", wordlist,
@@ -156,6 +166,11 @@ func ContentDiscovery(ctx context.Context, cfg *config.Config, exec *runner.Exec
 
 				safeName := strings.NewReplacer("://", "_", "/", "_", ":", "_").Replace(target)
 				outFile := exec.OutputPath("gobuster", fmt.Sprintf("%s.txt", safeName))
+
+				if alreadyDone(outFile) {
+					green.Printf("  [skip] gobuster [%s]: output already exists\n", target)
+					return
+				}
 
 				args := []string{
 					"dir",

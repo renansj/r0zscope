@@ -48,6 +48,11 @@ func SubdomainTakeover(ctx context.Context, cfg *config.Config, exec *runner.Exe
 			fmt.Println("  [*] subzy - checking takeover...")
 
 			outFile := exec.OutputPath("subzy", "takeover.txt")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] subzy: output already exists\n")
+				exec.AddResult(runner.ModuleResult{Module: "subzy", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
 			args := []string{
 				"run",
 				"--targets", inputFile,
@@ -78,6 +83,11 @@ func SubdomainTakeover(ctx context.Context, cfg *config.Config, exec *runner.Exe
 			fmt.Println("  [*] subjack - checking takeover...")
 
 			outFile := exec.OutputPath("subjack", "takeover.txt")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] subjack: output already exists\n")
+				exec.AddResult(runner.ModuleResult{Module: "subjack", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
 			args := []string{
 				"-w", inputFile,
 				"-o", outFile,

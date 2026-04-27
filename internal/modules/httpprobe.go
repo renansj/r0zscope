@@ -47,6 +47,14 @@ func HTTPProbe(ctx context.Context, cfg *config.Config, exec *runner.Executor) {
 		fmt.Println("  [*] httpx (probe + tech detect)...")
 
 		outFile := exec.OutputPath("httpx", "alive.txt")
+		if alreadyDone(outFile) {
+			green.Printf("  [skip] httpx: output already exists\n")
+			cleanFile := exec.OutputPath("httpx", "urls-clean.txt")
+			extractCleanURLs(outFile, cleanFile)
+			addOutput(cleanFile)
+			exec.AddResult(runner.ModuleResult{Module: "httpx", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+			return
+		}
 
 		args := []string{
 			"-l", inputFile,
@@ -93,6 +101,12 @@ func HTTPProbe(ctx context.Context, cfg *config.Config, exec *runner.Executor) {
 			fmt.Println("  [*] httprobe...")
 
 			outFile := exec.OutputPath("httprobe", "alive.txt")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] httprobe: output already exists\n")
+				addOutput(outFile)
+				exec.AddResult(runner.ModuleResult{Module: "httprobe", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
 			lines, err := exec.RunCommandToFile(ctx, "httprobe",
 				[]string{"-c", fmt.Sprintf("%d", cfg.Threads), "-t", "10000"},
 				outFile,

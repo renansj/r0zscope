@@ -39,6 +39,11 @@ func DNSResolution(ctx context.Context, cfg *config.Config, exec *runner.Executo
 			fmt.Println("  [*] dnsx - mass DNS resolution...")
 
 			outFile := exec.OutputPath("dnsx", "resolved.txt")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] dnsx: output already exists\n")
+				exec.AddResult(runner.ModuleResult{Module: "dnsx", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
 			args := []string{
 				"-l", inputFile,
 				"-o", outFile,
@@ -76,6 +81,11 @@ func DNSResolution(ctx context.Context, cfg *config.Config, exec *runner.Executo
 			fmt.Println("  [*] dnsrecon - zone transfer & advanced enumeration...")
 
 			outFile := exec.OutputPath("dnsrecon", "results.txt")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] dnsrecon: output already exists\n")
+				exec.AddResult(runner.ModuleResult{Module: "dnsrecon", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
 			args := []string{
 				"-d", cfg.Target,
 				"-t", "std,axfr",

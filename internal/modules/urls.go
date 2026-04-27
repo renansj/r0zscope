@@ -49,6 +49,12 @@ func URLDiscovery(ctx context.Context, cfg *config.Config, exec *runner.Executor
 			fmt.Println("  [*] waybackurls - historical URLs...")
 
 			outFile := exec.OutputPath("waybackurls", "urls.txt")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] waybackurls: output already exists\n")
+				addOutput(outFile)
+				exec.AddResult(runner.ModuleResult{Module: "waybackurls", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
 			lines, err := exec.RunCommandToFile(ctx, "waybackurls", []string{cfg.Target}, outFile, nil)
 
 			if err != nil && lines == 0 {
@@ -71,6 +77,12 @@ func URLDiscovery(ctx context.Context, cfg *config.Config, exec *runner.Executor
 			fmt.Println("  [*] gau - AlienVault, Wayback, Common Crawl...")
 
 			outFile := exec.OutputPath("gau", "urls.txt")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] gau: output already exists\n")
+				addOutput(outFile)
+				exec.AddResult(runner.ModuleResult{Module: "gau", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
 			args := []string{
 				"--threads", fmt.Sprintf("%d", cfg.Threads),
 				"--o", outFile,
@@ -100,6 +112,12 @@ func URLDiscovery(ctx context.Context, cfg *config.Config, exec *runner.Executor
 			fmt.Println("  [*] katana - active crawling with JS parsing + response download...")
 
 			outFile := exec.OutputPath("katana", "urls.txt")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] katana: output already exists\n")
+				addOutput(outFile)
+				exec.AddResult(runner.ModuleResult{Module: "katana", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
 
 			args := []string{
 				"-list", aliveFile,
@@ -141,6 +159,14 @@ func URLDiscovery(ctx context.Context, cfg *config.Config, exec *runner.Executor
 			outDir := exec.ModuleDir("gospider")
 			exec.EnsureDir(outDir)
 
+			consolidatedFile := exec.OutputPath("gospider", "all-urls.txt")
+			if alreadyDone(consolidatedFile) {
+				green.Printf("  [skip] gospider: output already exists\n")
+				addOutput(consolidatedFile)
+				exec.AddResult(runner.ModuleResult{Module: "gospider", Success: true, OutputDir: consolidatedFile, Lines: runner.CountLines(consolidatedFile), Duration: 0})
+				return
+			}
+
 			args := []string{
 				"-S", aliveFile,
 				"-o", outDir,
@@ -152,7 +178,7 @@ func URLDiscovery(ctx context.Context, cfg *config.Config, exec *runner.Executor
 			}
 
 			_, err := exec.RunCommand(ctx, "gospider", args, nil)
-			consolidatedFile := exec.OutputPath("gospider", "all-urls.txt")
+			consolidatedFile = exec.OutputPath("gospider", "all-urls.txt")
 			lines := consolidateGoSpiderOutput(outDir, consolidatedFile)
 
 			if err != nil && lines == 0 {
@@ -175,6 +201,12 @@ func URLDiscovery(ctx context.Context, cfg *config.Config, exec *runner.Executor
 			fmt.Println("  [*] hakrawler - fast crawler...")
 
 			outFile := exec.OutputPath("hakrawler", "urls.txt")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] hakrawler: output already exists\n")
+				addOutput(outFile)
+				exec.AddResult(runner.ModuleResult{Module: "hakrawler", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
 			args := []string{
 				"-d", fmt.Sprintf("%d", cfg.CrawlDepth),
 				"-t", fmt.Sprintf("%d", cfg.Threads),
@@ -204,6 +236,12 @@ func URLDiscovery(ctx context.Context, cfg *config.Config, exec *runner.Executor
 			fmt.Println("  [*] paramspider - parameter mining...")
 
 			outFile := exec.OutputPath("paramspider", "urls.txt")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] paramspider: output already exists\n")
+				addOutput(outFile)
+				exec.AddResult(runner.ModuleResult{Module: "paramspider", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
 			args := []string{
 				"-d", cfg.Target,
 				"-o", outFile,

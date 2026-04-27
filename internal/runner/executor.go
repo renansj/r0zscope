@@ -260,3 +260,19 @@ func FileExists(path string) bool {
 	}
 	return info.Size() > 0
 }
+
+func DirHasFiles(path string) bool {
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		return false
+	}
+	for _, e := range entries {
+		if !e.IsDir() {
+			info, _ := e.Info()
+			if info != nil && info.Size() > 0 {
+				return true
+			}
+		}
+	}
+	return false
+}

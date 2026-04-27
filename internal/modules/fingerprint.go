@@ -39,6 +39,11 @@ func Fingerprint(ctx context.Context, cfg *config.Config, exec *runner.Executor)
 			fmt.Println("  [*] wafw00f - WAF detection...")
 
 			outFile := exec.OutputPath("wafw00f", "waf-results.txt")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] wafw00f: output already exists\n")
+				exec.AddResult(runner.ModuleResult{Module: "wafw00f", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
 			aliveURLs := readLines(aliveFile)
 
 			var results []string
@@ -90,6 +95,11 @@ func Fingerprint(ctx context.Context, cfg *config.Config, exec *runner.Executor)
 			fmt.Println("  [*] whatweb - web fingerprinting...")
 
 			outFile := exec.OutputPath("whatweb", "fingerprint.txt")
+			if alreadyDone(outFile) {
+				green.Printf("  [skip] whatweb: output already exists\n")
+				exec.AddResult(runner.ModuleResult{Module: "whatweb", Success: true, OutputDir: outFile, Lines: runner.CountLines(outFile), Duration: 0})
+				return
+			}
 			args := []string{
 				"-i", aliveFile,
 				"--log-brief", outFile,

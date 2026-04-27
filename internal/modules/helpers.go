@@ -54,6 +54,14 @@ func openFileAsReader(path string) io.Reader {
 	return f
 }
 
+func alreadyDone(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return info.Size() > 0
+}
+
 func filterParamURLs(inputPath, outputPath string) {
 	lines := readLines(inputPath)
 	var filtered []string
