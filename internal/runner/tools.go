@@ -351,8 +351,7 @@ func AllTools() []ToolInfo {
 		{
 			Name:        "trufflehog",
 			Binary:      "trufflehog",
-			InstallCmd:  "pip3 install trufflehog || go install github.com/trufflesecurity/trufflehog/v3@latest",
-			GoInstall:   "github.com/trufflesecurity/trufflehog/v3@latest",
+			InstallCmd:  "pip3 install trufflehog",
 			Description: "Secret and credential detection in files (filesystem scan)",
 			Required:    false,
 			Category:    "js",

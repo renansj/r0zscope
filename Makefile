@@ -33,40 +33,39 @@ deps:
 
 install-go-tools:
 	@echo "[*] Installing Go tools..."
-	go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
-	go install -v github.com/tomnomnom/assetfinder@latest
-	go install -v github.com/owasp-amass/amass/v4/...@master
-	go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest
-	go install -v github.com/tomnomnom/httprobe@latest
-	go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest
-	go install -v github.com/projectdiscovery/katana/cmd/katana@latest
-	go install -v github.com/tomnomnom/waybackurls@latest
-	go install -v github.com/lc/gau/v2/cmd/gau@latest
-	go install -v github.com/tomnomnom/anew@latest
-	go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest
-	go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest
-	go install -v github.com/jaeles-project/gospider@latest
-	go install -v github.com/tomnomnom/unfurl@latest
-	go install -v github.com/tomnomnom/qsreplace@latest
-	go install -v github.com/tomnomnom/gf@latest
-	go install -v github.com/haccer/subjack@latest
-	go install -v github.com/PentestPad/subzy@latest
-	go install -v github.com/hahwul/dalfox/v2@latest
-	go install -v github.com/dwisiswant0/crlfuzz/cmd/crlfuzz@latest
-	go install -v github.com/ffuf/ffuf/v2@latest
-	go install -v github.com/OJ/gobuster/v3@latest
-	go install -v github.com/hakluke/hakrawler@latest
-	go install -v github.com/lc/subjs@latest
-	go install -v github.com/003random/getJS@latest
-	go install -v github.com/gwen001/github-subdomains@latest
-	go install -v github.com/d3mondev/puredns/v2@latest
-	go install -v github.com/projectdiscovery/shuffledns/cmd/shuffledns@latest
-	go install -v github.com/trufflesecurity/trufflehog/v3@latest
+	-go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
+	-go install -v github.com/tomnomnom/assetfinder@latest
+	-go install -v github.com/owasp-amass/amass/v4/...@master
+	-go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest
+	-go install -v github.com/tomnomnom/httprobe@latest
+	-go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest
+	-go install -v github.com/projectdiscovery/katana/cmd/katana@latest
+	-go install -v github.com/tomnomnom/waybackurls@latest
+	-go install -v github.com/lc/gau/v2/cmd/gau@latest
+	-go install -v github.com/tomnomnom/anew@latest
+	-go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest
+	-go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest
+	-go install -v github.com/jaeles-project/gospider@latest
+	-go install -v github.com/tomnomnom/unfurl@latest
+	-go install -v github.com/tomnomnom/qsreplace@latest
+	-go install -v github.com/tomnomnom/gf@latest
+	-go install -v github.com/haccer/subjack@latest
+	-go install -v github.com/PentestPad/subzy@latest
+	-go install -v github.com/hahwul/dalfox/v2@latest
+	-go install -v github.com/dwisiswant0/crlfuzz/cmd/crlfuzz@latest
+	-go install -v github.com/ffuf/ffuf/v2@latest
+	-go install -v github.com/OJ/gobuster/v3@latest
+	-go install -v github.com/hakluke/hakrawler@latest
+	-go install -v github.com/lc/subjs@latest
+	-go install -v github.com/003random/getJS@latest
+	-go install -v github.com/gwen001/github-subdomains@latest
+	-go install -v github.com/d3mondev/puredns/v2@latest
+	-go install -v github.com/projectdiscovery/shuffledns/cmd/shuffledns@latest
 	@echo "[+] Go tools installed."
 
 install-pip-tools:
 	@echo "[*] Installing Python tools..."
-	pip3 install wafw00f arjun paramspider uro sslyze dirsearch
+	pip3 install wafw00f arjun paramspider uro sslyze dirsearch trufflehog
 	@echo "[+] Python tools installed."
 
 install-apt-tools:
