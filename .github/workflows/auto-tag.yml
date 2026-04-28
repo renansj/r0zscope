@@ -1,0 +1,87 @@
+name: Auto Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    outputs:
+      new_tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Get latest tag
+        id: current
+        run: |
+          TAG=$(git tag --sort=-v:refname | head -1)
+          echo "tag=${TAG:-v0.0.0}" >> "$GITHUB_OUTPUT"
+
+      - name: Determine bump from commits
+        id: bump
+        run: |
+          PREV_TAG="${{ steps.current.outputs.tag }}"
+          if [ "$PREV_TAG" = "v0.0.0" ]; then
+            COMMITS=$(git log --pretty=format:"%s" HEAD)
+          else
+            COMMITS=$(git log --pretty=format:"%s" ${PREV_TAG}..HEAD)
+          fi
+
+          if [ -z "$COMMITS" ]; then echo "type=none" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if echo "$COMMITS" | grep -qE "^feat!:|BREAKING CHANGE"; then echo "type=major" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if echo "$COMMITS" | grep -qE "^feat(\(|:)"; then echo "type=minor" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if echo "$COMMITS" | grep -qE "^(fix|perf|refactor)(\(|:)"; then echo "type=patch" >> "$GITHUB_OUTPUT"; exit 0; fi
+          echo "type=none" >> "$GITHUB_OUTPUT"
+
+      - name: Calculate next version
+        id: version
+        if: steps.bump.outputs.type != 'none'
+        run: |
+          CURRENT="${{ steps.current.outputs.tag }}"
+          CURRENT="${CURRENT#v}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+          case "${{ steps.bump.outputs.type }}" in
+            major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+            patch) PATCH=$((PATCH + 1)) ;;
+          esac
+          echo "tag=v${MAJOR}.${MINOR}.${PATCH}" >> "$GITHUB_OUTPUT"
+
+      - name: Create tag
+        if: steps.bump.outputs.type != 'none'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.version.outputs.tag }}" -m "${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"
+
+  release:
+    needs: tag
+    if: needs.tag.outputs.new_tag != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.tag.outputs.new_tag }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ">=1.21"
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
